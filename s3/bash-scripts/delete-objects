@@ -1,0 +1,27 @@
+#! /usr/bin/env bash
+echo "== delete object"
+
+# Checks if there is a bucket-name
+if [ -z "$1" ]; then
+    echo "No bucket name provided, eg. ./bucket my-bucket2412"
+    exit 1
+fi
+
+BUCKET_NAME=$1
+
+# Absolute path to the output file in /tmp
+output_file="/tmp/delete_objects.json"
+
+# List objects and format as JSON array with jq
+aws s3api list-objects-v2 \
+--bucket $BUCKET_NAME \
+--query Contents[].Key \
+| jq -n '{Objects: [inputs | .[] | {Key: .}]}' > "$output_file"
+
+# Delete objects using the file:// URL
+aws s3api delete-objects \
+--bucket $BUCKET_NAME \
+--delete "file://$output_file"
+
+# Optionally, clean up the JSON file after deletion
+rm "$output_file"
